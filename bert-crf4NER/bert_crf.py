@@ -15,10 +15,14 @@ from torch import optim
 import torch.nn.functional as F
 from torch.utils import data 
 from transformers import BertTokenizer
+from transformers import AutoTokenizer
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 import numpy as np
 import os
 from transformers import BertPreTrainedModel, BertModel
+from transformers import AutoModelForTokenClassification
+
 from torchcrf import CRF
 import timeit
 import subprocess
@@ -71,7 +75,9 @@ class NER_Dataset(data.Dataset):
         self.tag2idx = tag2idx
         self.sentences = sentences
         self.labels = labels
-        self.tokenizer = BertTokenizer.from_pretrained(tokenizer_path, do_lower_case=do_lower_case)
+        self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_path, do_lower_case=do_lower_case)
+
+        #self.tokenizer = BertTokenizer.from_pretrained(tokenizer_path, do_lower_case=do_lower_case)
 
     def __len__(self):
         return len(self.sentences)
@@ -134,7 +140,7 @@ class Bert_CRF(BertPreTrainedModel):
     def __init__(self, config):
         super(Bert_CRF, self).__init__(config)
         self.num_labels = config.num_labels
-        self.bert = BertModel(config)
+        self.bert = AutoModelForTokenClassification(config)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
         self.classifier = nn.Linear(config.hidden_size, self.num_labels)
         self.init_weights()
@@ -153,7 +159,7 @@ class Bert_CRF(BertPreTrainedModel):
             prediction = self.crf.decode(emission, mask=attn_masks)
             return prediction
 
-def generate_training_data(config, bert_tokenizer="bert-base", do_lower_case=True):
+def generate_training_data(config, bert_tokenizer="vinai/phobert-base", do_lower_case=True):
     training_data, validation_data = config.data_dir+config.training_data, config.data_dir+config.val_data 
     train_sentences, train_labels, label_set = corpus_reader(training_data, delim=' ')
     label_set.append('X')
@@ -179,7 +185,7 @@ def generate_training_data(config, bert_tokenizer="bert-base", do_lower_case=Tru
                                 collate_fn=pad)
     return train_iter, eval_iter, tag2idx
 
-def generate_test_data(config, tag2idx, bert_tokenizer="bert-base", do_lower_case=True):
+def generate_test_data(config, tag2idx, bert_tokenizer="vinai/phobert-base", do_lower_case=True):
     test_data = config.data_dir+config.test_data
     test_sentences, test_labels, _ = corpus_reader(test_data, delim=' ')
     test_dataset = NER_Dataset(tag2idx, test_sentences, test_labels, tokenizer_path = bert_tokenizer, do_lower_case=do_lower_case)
@@ -190,7 +196,7 @@ def generate_test_data(config, tag2idx, bert_tokenizer="bert-base", do_lower_cas
                                 collate_fn=pad)
     return test_iter
 
-def train(train_iter, eval_iter, tag2idx, config, bert_model="bert-base-uncased"):
+def train(train_iter, eval_iter, tag2idx, config, bert_model="vinai/phobert-base"):
     #print('#Tags: ', len(tag2idx))
     unique_labels = list(tag2idx.keys())
     model = Bert_CRF.from_pretrained(bert_model, num_labels = len(tag2idx))
