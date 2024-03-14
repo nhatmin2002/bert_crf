@@ -10,6 +10,6 @@ class Config(object):
 	mode = 'prediction' # for prediction mode = "prediction"
 	training_data = 'train.txt'
 	val_data = 'dev.txt'
-	test_data = test.txt'
+	test_data = 'test.txt'
 	test_out = 'test_prediction.csv'
 	raw_prediction_output = 'raw_prediction.csv'
