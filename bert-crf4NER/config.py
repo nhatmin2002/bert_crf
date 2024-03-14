@@ -1,6 +1,6 @@
 class Config(object):	
 	apr_dir = '../model/'
-	data_dir = '../corpus/'
+	data_dir = '/kaggle/working/bert_crf/corpus/'
 	model_name = 'model_4.pt'
 	epoch = 20
 	bert_model = 'vinai/phobert-base'
